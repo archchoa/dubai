@@ -6,12 +6,15 @@
 #
 defusedxml==0.4.1         # via python3-openid
 django-allauth==0.30.0
+django-braces==1.10.0     # via django-oauth-toolkit
 django-debug-toolbar==1.6
-Django==1.10.5            # via django-allauth, django-debug-toolbar
+django-oauth-toolkit==0.11.0
+Django==1.10.5            # via django-allauth, django-debug-toolbar, django-oauth-toolkit
 djangorestframework==3.5.3
 environ==1.0
-oauthlib==2.0.1           # via requests-oauthlib
+oauthlib==1.1.2           # via django-oauth-toolkit, requests-oauthlib
 python3-openid==3.0.10    # via django-allauth
 requests-oauthlib==0.7.0  # via django-allauth
 requests==2.12.4          # via django-allauth, requests-oauthlib
+six==1.10.0               # via django-oauth-toolkit
 sqlparse==0.2.2           # via django-debug-toolbar

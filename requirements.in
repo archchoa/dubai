@@ -1,5 +1,6 @@
 Django
 django-allauth
 django-debug-toolbar
+django-oauth-toolkit
 djangorestframework
 environ

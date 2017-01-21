@@ -21,4 +21,5 @@ urlpatterns = [
     url(r'^api/', include('burj.urls')),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^accounts/', include('allauth.urls')),  # to replace with API calls
+    url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]

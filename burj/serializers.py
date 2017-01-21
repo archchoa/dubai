@@ -20,5 +20,11 @@ class AccountSerializer(serializers.ModelSerializer):
         fields = ('email', 'first_name', 'last_name', 'password')
 
 
+class GuestAccountSerializer(AccountSerializer):
+    class Meta:
+        model = User
+        fields = ('first_name', )
+
+
 class VerifyEmailSerializer(serializers.Serializer):
     key = serializers.CharField()
