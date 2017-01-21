@@ -5,15 +5,16 @@ from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
 
-from rest_framework import status
+from rest_framework import permissions, status
 from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import AccountSerializer, GuestAccountSerializer, VerifyEmailSerializer
+from .serializers import (AccountSerializer, GuestAccountSerializer,
+                          VerifyEmailSerializer, ChangePasswordSerializer)
 
 sensitive_post_parameters_m = method_decorator(
-    sensitive_post_parameters('password')
+    sensitive_post_parameters('password', 'old_password', 'new_password'),
 )
 
 
@@ -58,6 +59,25 @@ class VerifyEmailView(APIView, ConfirmEmailView):
         account_serializer = AccountSerializer(user)
 
         return Response(account_serializer.data, status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+
+    def get_serializer(self, *args, **kwargs):
+        return ChangePasswordSerializer(*args, **kwargs)
+
+    @sensitive_post_parameters_m
+    def dispatch(self, *args, **kwargs):
+        return super(ChangePasswordView, self).dispatch(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(context={'request': request},
+                                         data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({'status': 'OK'}, status=status.HTTP_200_OK)
 
 
 class UserListView(ListAPIView):
