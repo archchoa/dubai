@@ -17,6 +17,19 @@ class AccountSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True,
                                      style={'input_type': 'password'})
 
+    def create(self, validated_data):
+        user = User.objects.create(
+            email=validated_data['email'],
+            username=validated_data['email'],
+            first_name=getattr(validated_data, 'first_name', ''),
+            last_name=getattr(validated_data, 'last_name', '')
+        )
+
+        user.set_password(validated_data['password'])
+        user.save()
+
+        return user
+
     class Meta:
         model = User
         fields = ('email', 'first_name', 'last_name', 'password')
