@@ -12,7 +12,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import (AccountSerializer, GuestAccountSerializer,
-                          VerifyEmailSerializer, ChangePasswordSerializer)
+                          UpdateAccountSerializer, VerifyEmailSerializer,
+                          ChangePasswordSerializer)
 
 sensitive_post_parameters_m = method_decorator(
     sensitive_post_parameters('password', 'old_password', 'new_password'),
@@ -113,10 +114,11 @@ class UserListView(ListAPIView):
 class ProfileView(RetrieveUpdateAPIView):
     """
     This view displays the user's profile and provides update functionality.
-    Update functionality is already provided by DRF for PATCH, PUT requests.
+    Upon update, it checks if the e-mail was changed. If changed, the
+    username is set to the new e-mail.
     """
     permission_classes = [permissions.IsAuthenticated, ]
-    serializer_class = AccountSerializer
+    serializer_class = UpdateAccountSerializer
 
     def get_object(self):
         return self.request.user  # user to be displayed and modified
@@ -125,3 +127,12 @@ class ProfileView(RetrieveUpdateAPIView):
         user = self.get_object()
         serializer = self.get_serializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def perform_update(self, serializer):
+        user = self.get_object()
+        email = serializer.validated_data['email']
+
+        if user.email != email:
+            serializer.save(username=email)
+        else:
+            serializer.save()
