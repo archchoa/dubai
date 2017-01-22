@@ -49,8 +49,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'oauth2_provider',
     'rest_framework',
-    'rest_framework.authtoken',
-    'burj',
+    'api',
 ]
 
 MIDDLEWARE_CLASSES = [

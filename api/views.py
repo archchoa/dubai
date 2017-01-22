@@ -44,13 +44,13 @@ class VerifyEmailView(APIView, ConfirmEmailView):
     This view allows the user to verify his e-mail. Uses django-allauth
     to confirm the e-mail.
     """
-    allowed_methods = ['POST', 'HEAD', 'OPTIONS']
 
     def get_serializer(self, *args, **kwargs):
         return VerifyEmailSerializer(*args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        return self.post(request, *args, **kwargs)  # redirect to POST
+        return Response({"detail": 'Method "GET" not allowed.'},
+                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -63,8 +63,11 @@ class VerifyEmailView(APIView, ConfirmEmailView):
         confirmation = self.get_object()
         confirmation.confirm(self.request)
 
-        # get the associated user
+        # get the associated user and activate it
         user = confirmation.email_address.user
+        user.is_active = 1
+        user.save()
+
         account_serializer = AccountSerializer(user)
 
         return Response(account_serializer.data, status=status.HTTP_200_OK)

@@ -22,7 +22,8 @@ class AccountSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             username=validated_data['email'],
             first_name=getattr(validated_data, 'first_name', ''),
-            last_name=getattr(validated_data, 'last_name', '')
+            last_name=getattr(validated_data, 'last_name', ''),
+            is_active=0
         )
 
         user.set_password(validated_data['password'])
