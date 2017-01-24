@@ -1,8 +1,13 @@
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
+
+from oauth2_provider.models import AccessToken
+
+import re
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -52,6 +57,25 @@ class VerifyEmailSerializer(serializers.Serializer):
     key = serializers.CharField()
 
 
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(required=True,
+                                     write_only=True,
+                                     style={'input_type': 'password'})
+
+    def validate(self, data):
+        user = authenticate(username=data.get('username'),
+                            password=data.get('password'))
+
+        if not user:
+            raise serializers.ValidationError('Invalid username and password')
+
+        if not user.is_active:
+            raise serializers.ValidationError('This account is not activated yet')  # noqa
+
+        return data
+
+
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(max_length=128)
     new_password = serializers.CharField(max_length=128)
@@ -59,12 +83,44 @@ class ChangePasswordSerializer(serializers.Serializer):
     def __init__(self, *args, **kwargs):
         super(ChangePasswordSerializer, self).__init__(*args, **kwargs)
         self.request = self.context.get('request')
-        self.user = getattr(self.request, 'user', None)
 
-    def validate_old_password(self, value):
-        if not self.user or not self.user.check_password(value):
+    def validate(self, data):
+        """
+        Below is the actual code for getting the user based on the token.
+        If authenticated, HTTP request will already contain the logged-in
+        User object. This is because django-oauth2-toolkit already handles
+        the authentication behind-the-scenes. Just be sure to include
+        the IsAuthenticated permission class to the view.
+        """
+        request = self.request
+        self.user = getattr(request, 'user', None)
+
+        """
+        For activity's sake, this is another way of authenticating a user
+        based on the authentication token.
+        """
+        if 'HTTP_AUTHORIZATION' in request.META:
+            token = request.META['HTTP_AUTHORIZATION']
+            token = re.search('(Bearer)(\s)(.*)', token)
+
+            if token:
+                token = token.group(3)
+            else:
+                raise serializers.ValidationError('Invalid access token')
+        else:
+            raise serializers.ValidationError('Unauthorized access')  # noqa
+
+        try:
+            token = AccessToken.objects.get(token=token)
+            self.user = token.user
+        except AccessToken.DoesNotExist:
+            raise serializers.ValidationError('Invalid access token')
+
+        if not self.user or \
+           not self.user.check_password(data.get('old_password')):
             raise serializers.ValidationError('Invalid password')
-        return value
+
+        return data
 
     def save(self):
         new_password = self.data.get('new_password')

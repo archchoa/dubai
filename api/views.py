@@ -5,19 +5,49 @@ from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
 
+from oauth2_provider.views import TokenView
+
 from rest_framework import permissions, status
 from rest_framework.generics import (CreateAPIView, ListAPIView,
                                      RetrieveUpdateAPIView)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import (AccountSerializer, GuestAccountSerializer,
-                          UpdateAccountSerializer, VerifyEmailSerializer,
-                          ChangePasswordSerializer)
+from .serializers import (LoginSerializer, AccountSerializer,
+                          GuestAccountSerializer, UpdateAccountSerializer,
+                          VerifyEmailSerializer, ChangePasswordSerializer)
+
+import json
 
 sensitive_post_parameters_m = method_decorator(
     sensitive_post_parameters('password', 'old_password', 'new_password'),
 )
+
+
+class LoginView(APIView, TokenView):
+    """
+    This view logins a user and generates an access token.
+    django-oauth-toolkit already handles the login through its own view.
+    For activity's sake, below is a code that does the same exact thing.
+    """
+
+    @sensitive_post_parameters_m
+    def dispatch(self, *args, **kwargs):
+        return super(LoginView, self).dispatch(*args, **kwargs)
+
+    def get_serializer(self, *args, **kwargs):
+        return LoginSerializer(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        url, headers, body, _status = self.create_token_response(request)
+
+        body = json.loads(body)
+        access_token = '%s %s' % (body.get('token_type'), body.get('access_token'))  # noqa
+
+        return Response({'access_token': access_token}, status=status.HTTP_200_OK)  # noqa
 
 
 class RegisterView(CreateAPIView):
@@ -79,7 +109,7 @@ class ChangePasswordView(APIView):
     This view allows the user to change his password. Uses django's built-in
     methods to check and modify password.
     """
-    permission_classes = [permissions.IsAuthenticated, ]
+    # permission_classes = [permissions.IsAuthenticated, ]
 
     def get_serializer(self, *args, **kwargs):
         return ChangePasswordSerializer(*args, **kwargs)
