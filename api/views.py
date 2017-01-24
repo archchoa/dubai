@@ -7,7 +7,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 
 from oauth2_provider.views import TokenView
 
-from rest_framework import permissions, status
+from rest_framework import status
 from rest_framework.generics import (CreateAPIView, ListAPIView,
                                      RetrieveUpdateAPIView)
 from rest_framework.response import Response
@@ -16,6 +16,8 @@ from rest_framework.views import APIView
 from .serializers import (LoginSerializer, AccountSerializer,
                           GuestAccountSerializer, UpdateAccountSerializer,
                           VerifyEmailSerializer, ChangePasswordSerializer)
+
+from . import permissions
 
 import json
 
@@ -109,7 +111,7 @@ class ChangePasswordView(APIView):
     This view allows the user to change his password. Uses django's built-in
     methods to check and modify password.
     """
-    # permission_classes = [permissions.IsAuthenticated, ]
+    # permission_classes = [permissions.IsAuthenticatedAndActive, ]
 
     def get_serializer(self, *args, **kwargs):
         return ChangePasswordSerializer(*args, **kwargs)
@@ -147,7 +149,7 @@ class ProfileView(RetrieveUpdateAPIView):
     Upon update, it checks if the e-mail was changed. If changed, the
     username is set to the new e-mail.
     """
-    permission_classes = [permissions.IsAuthenticated, ]
+    permission_classes = [permissions.IsAuthenticatedAndActive, ]
     serializer_class = UpdateAccountSerializer
 
     def get_object(self):

@@ -90,7 +90,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         If authenticated, HTTP request will already contain the logged-in
         User object. This is because django-oauth2-toolkit already handles
         the authentication behind-the-scenes. Just be sure to include
-        the IsAuthenticated permission class to the view.
+        the IsAuthenticatedAndActive permission class to the view.
         """
         self.user = getattr(self.request, 'user', None)
 
@@ -115,8 +115,13 @@ class ChangePasswordSerializer(serializers.Serializer):
         except AccessToken.DoesNotExist:
             raise serializers.ValidationError('Invalid access token')
 
-        if not self.user or \
-           not self.user.check_password(data.get('old_password')):
+        if not self.user:
+            raise serializers.ValidationError('User does not exist')
+
+        if not self.user.is_active:
+            raise serializers.ValidationError('User is inactive')
+
+        if not self.user.check_password(data.get('old_password')):
             raise serializers.ValidationError('Invalid password')
 
         return data
