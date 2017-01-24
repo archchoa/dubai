@@ -137,7 +137,8 @@ class UserListView(ListAPIView):
     queryset = User.objects.all()
 
     def get_serializer_class(self):
-        if self.request.user.is_authenticated():
+        user = self.request.user
+        if user.is_authenticated() and user.is_active:
             return AccountSerializer
         else:
             return GuestAccountSerializer
