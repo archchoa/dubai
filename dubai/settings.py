@@ -15,7 +15,7 @@ import environ
 # django-environ
 root = environ.Path(__file__) - 3
 env = environ.Env(
-    DEBUG=(bool, False),
+    DEBUG=(bool, True),
     ALLOWED_HOSTS=(list, ['127.0.0.1'])
 )
 environ.Env.read_env('.env')

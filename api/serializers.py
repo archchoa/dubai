@@ -92,15 +92,14 @@ class ChangePasswordSerializer(serializers.Serializer):
         the authentication behind-the-scenes. Just be sure to include
         the IsAuthenticated permission class to the view.
         """
-        request = self.request
-        self.user = getattr(request, 'user', None)
+        self.user = getattr(self.request, 'user', None)
 
         """
         For activity's sake, this is another way of authenticating a user
         based on the authentication token.
         """
-        if 'HTTP_AUTHORIZATION' in request.META:
-            token = request.META['HTTP_AUTHORIZATION']
+        if 'HTTP_AUTHORIZATION' in self.request.META:
+            token = self.request.META['HTTP_AUTHORIZATION']
             token = re.search('(Bearer)(\s)(.*)', token)
 
             if token:
