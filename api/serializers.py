@@ -70,9 +70,6 @@ class LoginSerializer(serializers.Serializer):
         if not user:
             raise serializers.ValidationError('Invalid username and password')
 
-        if not user.is_active:
-            raise serializers.ValidationError('This account is not activated yet')  # noqa
-
         return data
 
 

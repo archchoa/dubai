@@ -15,7 +15,7 @@ $ pip install virtualenv
 Go to the project folder and setup your virtualenv
 
 ``` 
-$ cd path/to/dubai-api-test/
+$ cd path/to/dubai/
 $ virtualenv venv
 $ source virtualenv/scripts/activate
 ```
@@ -78,7 +78,7 @@ Here are the endpoints. Use any method (`curl`, `Postman`, etc.) you like to acc
     - Method: **POST**
     - Params: `username`, `password`, `grant_type`, `client_id`
     - Returns the OAuth2 bearer token which you can use to access `/api/users/`, `/api/change-password/`, and `/api/profile/`
-    - **Note:** `grant_type` must be `password`, `client_id` must be the client ID of your application. Also, the data must be encoded as `x-www-url-form urlencoded`
+    - **Note:** `grant_type` must be `password`, `client_id` must be the client ID of your application. The data must be also encoded as `x-www-url-form urlencoded`.
 3. `/api/users/`
     - Method: **GET**
     - Returns all the users. If a valid token is not provided, fields like `email` and `last_name` will be omitted.
