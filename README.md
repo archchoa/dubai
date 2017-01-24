@@ -66,18 +66,24 @@ You need to set up an OAuth2 application first. You can do so by going to `http:
 Here are the endpoints. Use any method (`curl`, `Postman`, etc.) you like to access these.
 
 1. `/api/register/`
+    - Method: **POST**
     - Params: `email`, `password`, `first_name` (optional), `last_name` (optional)
     - Returns the registered user and sends a verification e-mail containing the activation link to the user's e-mail
     - **Note:** Copy the verification token found in the activation link, and send a POST request to `#2` with the token as the parameter
 2. `/api/verify-email/`
+    - Method: **POST**
     - Params: `key` (verification token)
     - Returns the user
 2. `/api/login/`
-    - Params: `email` and `password`
+    - Method: **POST**
+    - Params: `username`, `password`, `grant_type`, `client_id`
     - Returns the OAuth2 bearer token which you can use to access `/api/users/`, `/api/change-password/`, and `/api/profile/`
+    - **Note:** `grant_type` must be `password`, `client_id` must be the client ID of your application. Also, the data must be encoded as `x-www-url-form urlencoded`
 3. `/api/users/`
+    - Method: **GET**
     - Returns all the users. If a valid token is not provided, fields like `email` and `last_name` will be omitted.
 4. `/api/change-password/`
+    - Method: **POST**
     - Params: `old_password` and `new_password`
     - Returns `OK` is successful
 5. `/api/profile/`
