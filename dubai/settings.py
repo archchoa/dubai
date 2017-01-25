@@ -133,6 +133,8 @@ MEDIA_URL = '/media/'
 STATIC_ROOT = root('static')
 STATIC_URL = '/static/'
 
+SITE_ID = 1
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_USE_TLS = True
 EMAIL_HOST = env('EMAIL_HOST')

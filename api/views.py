@@ -1,6 +1,7 @@
 from allauth.account.utils import send_email_confirmation
 from allauth.account.views import ConfirmEmailView
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
@@ -41,6 +42,7 @@ class LoginView(APIView, TokenView):
         return LoginSerializer(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        # if settings.TESTING is False:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -49,7 +51,7 @@ class LoginView(APIView, TokenView):
         body = json.loads(body)
         access_token = '%s %s' % (body.get('token_type'), body.get('access_token'))  # noqa
 
-        return Response({'access_token': access_token}, status=status.HTTP_200_OK)  # noqa
+        return Response({'access_token': access_token}, status=_status)  # noqa
 
 
 class RegisterView(CreateAPIView):
@@ -163,9 +165,13 @@ class ProfileView(RetrieveUpdateAPIView):
 
     def perform_update(self, serializer):
         user = self.get_object()
-        email = serializer.validated_data['email']
 
-        if user.email != email:
-            serializer.save(username=email)
+        if 'email' in serializer.validated_data:
+            email = serializer.validated_data['email']
+
+            if user.email != email:
+                serializer.save(username=email)
+            else:
+                serializer.save()
         else:
             serializer.save()

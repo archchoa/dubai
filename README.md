@@ -65,30 +65,39 @@ You need to set up an OAuth2 application first. You can do so by going to `http:
 
 Here are the endpoints. Use any method (`curl`, `Postman`, etc.) you like to access these.
 
-1. `/api/register/`
-    - Method: **POST**
+1. **POST** `/api/register/`
+    - Registers a new user account
     - Params: `email`, `password`, `first_name` (optional), `last_name` (optional)
     - Returns the registered user and sends a verification e-mail containing the activation link to the user's e-mail
-    - **Note:** Copy the verification token found in the activation link, and send a POST request to `#2` with the token as the parameter
-2. `/api/verify-email/`
-    - Method: **POST**
+    - **Note:** Copy the verification key found in the activation link, and send a POST request to `#2` with the token as the parameter
+2. **POST** `/api/verify-email/`
+    - Activates the user account
     - Params: `key` (verification token)
     - Returns the user
-2. `/api/login/`
-    - Method: **POST**
+3. **POST**`/api/login/`
+    - Logins the user 
     - Params: `username`, `password`, `grant_type`, `client_id`
     - Returns the OAuth2 bearer token which you can use to access `/api/users/`, `/api/change-password/`, and `/api/profile/`
-    - **Note:** `grant_type` must be `password`, `client_id` must be the client ID of your application. The data must be also encoded as `x-www-url-form urlencoded`.
-3. `/api/users/`
-    - Method: **GET**
+    - **Note:** `grant_type` must be `password`, `client_id` must be the client ID of your application. The data must be also sent and encoded as `x-www-url-form urlencoded`.
+4. **GET** `/api/users/`
+    - Lists all the users
     - Returns all the users. If a valid token is not provided, fields like `email` and `last_name` will be omitted.
-4. `/api/change-password/`
-    - Method: **POST**
+5. **POST** `/api/change-password/`
+    - Changes the user's password
     - Params: `old_password` and `new_password`
     - Returns `OK` is successful
 5. `/api/profile/`
-    - **GET:**
+    - Views and updates the user's profile
+    - **GET**
         - Returns the logged-in user's profile
     - **PUT** or **PATCH**
         - Params: `email`, `first_name`, `last_name`
         - Returns logged-in user's new profile
+
+## Testing
+
+Run the tests command below
+
+``` 
+$ python manage.py test
+```

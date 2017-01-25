@@ -10,6 +10,14 @@ from oauth2_provider.models import AccessToken
 import re
 
 
+def parse_token(token):
+    token = re.search('(Bearer)(\s)(.*)', token)
+
+    if token:
+        return token.group(3)
+    return None
+
+
 class AccountSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         required=True,
@@ -96,12 +104,8 @@ class ChangePasswordSerializer(serializers.Serializer):
         based on the authentication token.
         """
         if 'HTTP_AUTHORIZATION' in self.request.META:
-            token = self.request.META['HTTP_AUTHORIZATION']
-            token = re.search('(Bearer)(\s)(.*)', token)
-
-            if token:
-                token = token.group(3)
-            else:
+            token = parse_token(self.request.META['HTTP_AUTHORIZATION'])
+            if not token:
                 raise serializers.ValidationError('Invalid access token')
         else:
             raise serializers.ValidationError('Unauthorized access')  # noqa
