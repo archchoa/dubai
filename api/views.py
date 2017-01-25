@@ -1,7 +1,6 @@
 from allauth.account.utils import send_email_confirmation
 from allauth.account.views import ConfirmEmailView
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
@@ -42,7 +41,6 @@ class LoginView(APIView, TokenView):
         return LoginSerializer(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        # if settings.TESTING is False:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
