@@ -2,8 +2,14 @@
 
 Your normal REST API coding activity
 
-# Requirements
+## Requirements
 - Python 3.5
+
+## Libraries
+
+- Django REST Framework ([django-rest-framework](https://github.com/tomchristie/django-rest-framework))
+- Django OAuth Toolkit ([django-oauth-toolkit](https://github.com/evonove/django-oauth-toolkit))
+- django-allauth ([django-allauth](https://github.com/pennersr/django-allauth))
 
 ## Setup
 Install `virtualenv` if you don't have one already
