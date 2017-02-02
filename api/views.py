@@ -1,10 +1,12 @@
 from allauth.account.utils import send_email_confirmation
 from allauth.account.views import ConfirmEmailView
 
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
 
+from oauth2_provider.models import AccessToken
 from oauth2_provider.views import TokenView
 
 from rest_framework import status
@@ -20,10 +22,19 @@ from .serializers import (LoginSerializer, AccountSerializer,
 from . import permissions
 
 import json
+import re
 
 sensitive_post_parameters_m = method_decorator(
     sensitive_post_parameters('password', 'old_password', 'new_password'),
 )
+
+
+def parse_token(token):
+    token = re.search('(Bearer)(\s)(.*)', token)
+
+    if token:
+        return token.group(3)
+    return None
 
 
 class LoginView(APIView, TokenView):
@@ -31,6 +42,13 @@ class LoginView(APIView, TokenView):
     This view logins a user and generates an access token.
     django-oauth-toolkit already handles the login through its own view.
     For activity's sake, below is a code that does the same exact thing.
+
+    Please note that this login view will generate a new access token every
+    time. Reason being, the purpose of this view is to provide an access token
+    to the frontend / client. Once the client gets the access token, it will
+    save this token somewhere and use it to authenticate other views throughout
+    the whole session. Only if the token has expired will the client access
+    this view again to generate another access token.
     """
 
     @sensitive_post_parameters_m
@@ -43,6 +61,17 @@ class LoginView(APIView, TokenView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        user = authenticate(username=data.get('username'),
+                            password=data.get('password'))
+
+        if not user:
+            return Response(
+                {'detail': 'Login failed! Make sure username and password '
+                           'is correct, or that the account is activated.'},
+                status=status.HTTP_401_UNAUTHORIZED)
 
         url, headers, body, _status = self.create_token_response(request)
 
@@ -93,6 +122,7 @@ class VerifyEmailView(APIView, ConfirmEmailView):
         self.kwargs['key'] = serializer.validated_data['key']
 
         # use django-allauth to confirm the e-mail
+        # automatically issues an HTTP 404 if invalid key is given
         confirmation = self.get_object()
         confirmation.confirm(self.request)
 
@@ -124,7 +154,48 @@ class ChangePasswordView(APIView):
         serializer = self.get_serializer(context={'request': request},
                                          data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+
+        data = serializer.validated_data
+
+        """
+        Django-oauth-toolkit already handles the authentication behind the
+        scenes, using its built-in authentication backend.
+
+        Just use the request.user object to validate the user.
+
+        For activity's sake, this is another way of authenticating a user
+        based on the OAuth2 token.
+        """
+        if 'HTTP_AUTHORIZATION' in self.request.META:
+            token = parse_token(self.request.META['HTTP_AUTHORIZATION'])
+            if not token:
+                return Response({'detail': 'Invalid access token'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response({'detail': 'Unauthorized access'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            token = AccessToken.objects.get(token=token)
+            user = token.user
+        except AccessToken.DoesNotExist:
+            return Response({'detail': 'Invalid access token'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user:
+            return Response({'detail': 'User does not exist'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user.is_active:
+            return Response({'detail': 'User is inactive'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user.check_password(data.get('old_password')):
+            return Response({'detail': 'Invalid password'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        user.set_password(data.get('new_password'))
+        user.save()
 
         return Response({'status': 'OK'}, status=status.HTTP_200_OK)
 

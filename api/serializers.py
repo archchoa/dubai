@@ -1,21 +1,8 @@
-from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-
-from oauth2_provider.models import AccessToken
-
-import re
-
-
-def parse_token(token):
-    token = re.search('(Bearer)(\s)(.*)', token)
-
-    if token:
-        return token.group(3)
-    return None
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -34,8 +21,8 @@ class AccountSerializer(serializers.ModelSerializer):
         user = User.objects.create(
             email=validated_data['email'],
             username=validated_data['email'],
-            first_name=getattr(validated_data, 'first_name', ''),
-            last_name=getattr(validated_data, 'last_name', ''),
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
             is_active=0
         )
 
@@ -71,63 +58,13 @@ class LoginSerializer(serializers.Serializer):
                                      write_only=True,
                                      style={'input_type': 'password'})
 
-    def validate(self, data):
-        user = authenticate(username=data.get('username'),
-                            password=data.get('password'))
-
-        if not user:
-            raise serializers.ValidationError('Invalid username and password')
-
-        return data
-
 
 class ChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(max_length=128)
-    new_password = serializers.CharField(max_length=128)
-
-    def __init__(self, *args, **kwargs):
-        super(ChangePasswordSerializer, self).__init__(*args, **kwargs)
-        self.request = self.context.get('request')
+    old_password = serializers.CharField(max_length=128, required=True)
+    new_password = serializers.CharField(max_length=128, required=True)
 
     def validate(self, data):
-        """
-        Below is the actual code for getting the user based on the token.
-        If authenticated, HTTP request will already contain the logged-in
-        User object. This is because django-oauth2-toolkit already handles
-        the authentication behind-the-scenes. Just be sure to include
-        the IsAuthenticatedAndActive permission class to the view.
-        """
-        self.user = getattr(self.request, 'user', None)
-
-        """
-        For activity's sake, this is another way of authenticating a user
-        based on the authentication token.
-        """
-        if 'HTTP_AUTHORIZATION' in self.request.META:
-            token = parse_token(self.request.META['HTTP_AUTHORIZATION'])
-            if not token:
-                raise serializers.ValidationError('Invalid access token')
-        else:
-            raise serializers.ValidationError('Unauthorized access')  # noqa
-
-        try:
-            token = AccessToken.objects.get(token=token)
-            self.user = token.user
-        except AccessToken.DoesNotExist:
-            raise serializers.ValidationError('Invalid access token')
-
-        if not self.user:
-            raise serializers.ValidationError('User does not exist')
-
-        if not self.user.is_active:
-            raise serializers.ValidationError('User is inactive')
-
-        if not self.user.check_password(data.get('old_password')):
-            raise serializers.ValidationError('Invalid password')
-
+        if data.get('old_password') == data.get('new_password'):
+            raise serializers.ValidationError(
+                'New password must be different from old password')
         return data
-
-    def save(self):
-        new_password = self.data.get('new_password')
-        self.user.set_password(new_password)
-        self.user.save()

@@ -53,6 +53,13 @@ class RegisterUserTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.count(), 1)
 
+        data = {
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name
+        }
+        self.assertEqual(response.data, data)
+
     def test_register_user_with_no_email(self):
         data = {
             'password': self.password,
@@ -102,6 +109,14 @@ class VerifyEmailTest(APITestCase):
         response = self.client.post(reverse('api_verify_email'), {'key': key})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # check if User object is returned and is same with registered user
+        data = {
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name
+        }
+        self.assertEqual(response.data, data)
 
         # activate using invalid key
         key = 'donaldtrumphatesmexicans'
@@ -168,7 +183,7 @@ class LoginTest(APITestCase):
 
         response = self.client.post(reverse('api_login'), data)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class ChangePasswordTest(APITestCase):
@@ -234,6 +249,18 @@ class ChangePasswordTest(APITestCase):
 
         response = self.client.post(reverse('api_change_password'), password_data)  # noqa
 
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_change_password_with_same_password(self):
+        password_data = {
+            'old_password': self.old_password,
+            'new_password': self.old_password,
+        }
+
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer %s' % self.access_token)  # noqa
+
+        response = self.client.post(reverse('api_change_password'), password_data)  # noqa
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_change_password_with_invalid_token(self):
@@ -244,7 +271,7 @@ class ChangePasswordTest(APITestCase):
 
         response = self.client.post(reverse('api_change_password'), password_data)  # noqa
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class UserListTest(APITestCase):
@@ -412,6 +439,16 @@ class UserProfileTest(APITestCase):
         # change email to an already existing email
         data = {
             'email': 'flotus@whitehouse.gov',
+        }
+
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer %s' % self.access_token)  # noqa
+        response = self.client.patch(reverse('api_profile'), data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # use invalid email
+        data = {
+            'email': 'thisisaninvalidemail',
         }
 
         self.client.credentials(HTTP_AUTHORIZATION='Bearer %s' % self.access_token)  # noqa
